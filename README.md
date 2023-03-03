@@ -1,6 +1,6 @@
-# Template Project
+# Block Buster Game Prototype
 
-View the deployed template [here](http://twigg.gg/webdev-template/).
+View the deployed template [here](https://shimingk.github.io/block-buster-prototype/).
 
 This template project uses `vite` to run a dev server and build the project. It
 uses `gh-pages` to deploy the site to the `gh-pages` branch. The base app
