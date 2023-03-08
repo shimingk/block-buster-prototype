@@ -8,6 +8,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  doc,
 } from "firebase/firestore";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -42,7 +43,7 @@ async function sendName(username) {
   try {
     const docRef = await addDoc(collection(db, "leaderboard"), {
       time: Date.now(),
-      score: "10",
+      score: currScore,
       user: username
     });
     console.log("Document written with ID: ", docRef.id);
@@ -63,6 +64,12 @@ async function getAllScores() {
   });
 
   console.log(scores);
+
+  // textAlign(CENTER);
+  // textSize(35);
+  // for (let i = 0; i < 5; i++) {
+
+  // }
   render(view(), document.body);
 }
 
@@ -72,27 +79,37 @@ function handleInput(e) {
   if (e.key == "Enter") {
     sendName(e.target.value);
     e.target.value = "";
+    let inputForm = document.getElementById("input-container");
+    inputForm.remove();
+    render(view(), document.body);
   }
 }
-  
+
+function inputScore() {
+  return html `<div id="input-container">
+      <h2>Hit [Enter] after entering your name</h2>
+      <input type="text" @keydown=${handleInput} placeholder="NAME"/>
+    </div>`;
+}
+
 function view() {
   return html`<h1>Leaderboard</h1>
-    <input type="text" @keydown=${handleInput} />
+    
     <div id="score-container">
       ${scores.map((msg) => html`<div class="score">${msg.score} : ${msg.user}</div>`)}
     </div>`;
 }
 
-// onSnapshot(
-//   collection(db, "leaderboard"),
-//   (snapshot) => {
-//     console.log("snap", snapshot);
-//     getAllScores();
-//   },
-//   (error) => {
-//     console.error(error);
-//   }
-// );
+onSnapshot(
+  collection(db, "leaderboard"),
+  (snapshot) => {
+    console.log("snap", snapshot);
+    getAllScores();
+  },
+  (error) => {
+    console.error(error);
+  }
+);
 
 // render(view(), document.body);
 
@@ -102,8 +119,8 @@ let evilPaddle;
 let ball;
 let x;
 // Window dimensions.
-const windowWidth = 1200;
-const windowHeight = 600;
+const windowWidth = 1000;
+const windowHeight = 500;
 
 // Rows and columns.
 const rows = 2;
@@ -123,6 +140,7 @@ let currScore = 0;
 
 // Set up the canvas.
 window.setup = () => {
+  // new Canvas();
   createCanvas(windowWidth, windowHeight);
   world.gravity = -25;
   // create user paddle sprite
@@ -177,6 +195,7 @@ window.checkBall = () => {
   // ball collision with the bottom
   if (ball.y + ball.diameter / 2 >= windowHeight) {
     alive = false;
+    ball.visible = false;
     console.log("end");
   }
   // ball collision with left and right sides of the screen
@@ -227,21 +246,55 @@ window.endScreen = (message) => {
   text(message, windowWidth / 2, windowHeight / 2); // 300, 170
   text('Play again: [Space]', windowWidth / 2, windowHeight / 2 + 55); // 300, 225
   text(`Score: ${currScore}`, windowWidth / 2, windowHeight / 2 - 55); // 300, 280
+  text('Save Score: [Tab]', windowWidth / 2, windowHeight / 2 + 110);
+}
+
+// restart game
+window.keyPressed = () => {
+
+  // restart game 
+  if(keyCode === 32 && !alive) {
+    alive = true;
+    // paddle.x = windowWidth / 2 - 50,
+    // ball.x = paddle.x - 25,
+    // ball.y = paddle.y - 50,
+    // ball.speedX = 5;
+    // ball.speedY = 5;
+    ball.visible = true;
+    evilPaddle.visible = true;
+    ball.x = width / 2;
+    ball.y = height / 2;
+    blocks.removeAll(); // clean block group   
+    currScore = 0;
+    generateBlocks();
+  }
+
+  if (keyCode === 9) {
+    if ((!alive && blocks.length != 0) || blocks.length === 0) {
+      render(inputScore(), document.body);
+    }
+  }
 }
 
 // Animate and draw everything to the screen.
 window.draw = () => {
   background("black");
+  ball.visible = true;
   // controls user paddle's movement
   userPaddle.velocity.x = (mouseX - userPaddle.position.x) * 0.25;
   userPaddle.velocity.y = 0;
   // If the player broke all the blocks, they win.
-  if(blocks.length === 0) {
+  if (blocks.length === 0) {
+    ball.visible = false;
+    evilPaddle.visible = false;
     endScreen("You Win!");
   }
   // If the player died and there are still bricks to break, they lost.
-  if(!alive && blocks.length != 0) endScreen("GAME OVER 😜");
-  
+  if (!alive && blocks.length != 0) { 
+    ball.visible = false;
+    evilPaddle.visible = false;
+    endScreen("GAME OVER 😜");
+  }
   // If the player is still alive, draw everything to the screen.
   if(alive) {
     // drawBlocks();
