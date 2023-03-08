@@ -13,8 +13,6 @@ import {
 // https://firebase.google.com/docs/web/setup#available-libraries
 import { html, render } from "lit-html";
 
-// let score = 0;
-
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDQaG0yTcGBBC0HpUSgicwDaCQdWYkULRM",
@@ -68,7 +66,7 @@ async function getAllScores() {
   render(view(), document.body);
 }
 
-getAllScores();
+// getAllScores();
 
 function handleInput(e) {
   if (e.key == "Enter") {
@@ -85,15 +83,184 @@ function view() {
     </div>`;
 }
 
-onSnapshot(
-  collection(db, "leaderboard"),
-  (snapshot) => {
-    console.log("snap", snapshot);
-    getAllScores();
-  },
-  (error) => {
-    console.error(error);
-  }
-);
+// onSnapshot(
+//   collection(db, "leaderboard"),
+//   (snapshot) => {
+//     console.log("snap", snapshot);
+//     getAllScores();
+//   },
+//   (error) => {
+//     console.error(error);
+//   }
+// );
 
-render(view(), document.body);
+// render(view(), document.body);
+
+// GameDev Implementation
+let userPaddle;
+let evilPaddle;
+let ball;
+let x;
+// Window dimensions.
+const windowWidth = 1200;
+const windowHeight = 600;
+
+// Rows and columns.
+const rows = 2;
+const cols = 5;
+
+// Booleans for alive or not and evil paddle direction.
+let alive = true;
+let changeDir = false;
+
+// Dimensions for bricks
+const blockWidth =  Math.round(windowWidth / cols - 5);
+const blockHeight = Math.round((windowHeight * 1/10 ) / rows - 10);
+
+// store block sprite group and current game score
+let blocks;
+let currScore = 0;
+
+// Set up the canvas.
+window.setup = () => {
+  createCanvas(windowWidth, windowHeight);
+  world.gravity = -25;
+  // create user paddle sprite
+  userPaddle = createSprite(width / 2, height, 250, 50);
+  userPaddle.shapeColor = color('turquoise');
+  // create evil paddle sprite
+  evilPaddle = createSprite(width / 2, height / 2, 150, 50);
+  evilPaddle.shapeColor = color('red');
+  // create ball sprite
+  ball = new Sprite();
+  ball.diameter = 25;
+  ball.shapeColor = color('yellow');
+  // create block sprites
+  blocks = new Group();
+  generateBlocks();
+  x = 15;
+}
+
+// Generate blocks.
+window.generateBlocks = () => {
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      let block = createSprite(
+        j * (blockWidth + 2),
+        i * (blockHeight + 2),
+        blockWidth,
+        blockHeight
+      );
+      blocks.add(block);
+    }
+  }
+}
+
+// Draw blocks.
+// window.drawBlocks = () => {
+//   blocks.forEach(block => {
+//     fill('springgreen');
+//     rect(block.x, block.y + 50, block.width, block.height);
+//     noStroke();
+//   });
+// }
+
+window.checkBall = () => {
+  if (ball.velocity.x === 0 && ball.velocity.y === 0) {
+    ball.velocity.x = 5;
+    ball.velocity.y = 5;
+  }
+  // ball collision with top of the screen
+  if (ball.y - ball.diameter / 2 <= 0) {
+    ball.velocity.y = -ball.velocity.y;
+  }
+  // ball collision with the bottom
+  if (ball.y + ball.diameter / 2 >= windowHeight) {
+    alive = false;
+    console.log("end");
+  }
+  // ball collision with left and right sides of the screen
+  if (ball.x - ball.diameter / 2 <= 0  || ball.x + ball.diameter / 2 >= windowWidth) {
+    ball.velocity.x = -ball.velocity.x;
+  }
+
+  // ball collision with blocks
+  blocks.forEach((block, index) => {
+    if(ball.y - ball.diameter / 2 <= block.y + 50 + block.h && ball.x > block.x && ball.x <= block.x + block.w) {
+      ball.velocity.y = -ball.velocity.y;
+      block.remove(index, 1);
+      currScore++;
+      if(blocks.length === 0) alive = false;
+    }
+  });
+
+  // ball collision with user paddle
+  if (ball.collides(userPaddle)) {
+    ball.velocity.x = -ball.velocity.x;
+    ball.velocity.y = -5;
+  }
+  // ball collision with evil paddle
+  if (ball.collides(evilPaddle)) {
+    ball.velocity.x = -ball.velocity.x;
+    ball.velocity.y = -5;
+  }
+}
+
+// Display score at the top of the screen.
+window.displayScore = () => {
+  fill("beige");
+  textAlign(CENTER);
+  textSize(25)
+  text(`Score: ${currScore}`, windowWidth / 2, 50);
+}
+
+// Display message (either "GAME OVER" or "You Win!")
+window.endScreen = (message) => {
+  if (message === "You Win!") {
+    fill('springgreen');
+    message += "  🤩";
+  } else {
+    fill('magenta');
+  }
+  textAlign(CENTER);
+  textSize(35);
+  text(message, windowWidth / 2, windowHeight / 2); // 300, 170
+  text('Play again: [Space]', windowWidth / 2, windowHeight / 2 + 55); // 300, 225
+  text(`Score: ${currScore}`, windowWidth / 2, windowHeight / 2 - 55); // 300, 280
+}
+
+// Animate and draw everything to the screen.
+window.draw = () => {
+  background("black");
+  // controls user paddle's movement
+  userPaddle.velocity.x = (mouseX - userPaddle.position.x) * 0.25;
+  userPaddle.velocity.y = 0;
+  // If the player broke all the blocks, they win.
+  if(blocks.length === 0) {
+    endScreen("You Win!");
+  }
+  // If the player died and there are still bricks to break, they lost.
+  if(!alive && blocks.length != 0) endScreen("GAME OVER 😜");
+  
+  // If the player is still alive, draw everything to the screen.
+  if(alive) {
+    // drawBlocks();
+    displayScore();
+    checkBall();
+    // moveEvilPaddle();
+    evilPaddle.collider = 'kinematic';
+    if (evilPaddle.velocity.x === 0) {
+      evilPaddle.velocity.x = 5;
+    } else {
+      if (evilPaddle.x === 0) {
+        evilPaddle.velocity.x = -evilPaddle.velocity.x;
+      }
+      if (evilPaddle.x === windowWidth) {
+        evilPaddle.velocity.x = -evilPaddle.velocity.x;
+      }
+    }
+    blocks.collider = 'kinematic';
+    userPaddle.collider = 'kinematic';
+    drawSprites();
+  }
+}
