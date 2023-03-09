@@ -205,7 +205,7 @@ window.checkBall = () => {
 
   // ball collision with blocks
   blocks.forEach((block, index) => {
-    if(ball.y - ball.diameter / 2 <= block.y + 50 + block.h && ball.x > block.x && ball.x <= block.x + block.w) {
+    if (ball.y - ball.diameter / 2 <= block.y + block.h && ball.x > block.x && ball.x <= block.x + block.w) {
       ball.velocity.y = -ball.velocity.y;
       block.remove(index, 1);
       currScore++;
@@ -260,7 +260,7 @@ window.keyPressed = () => {
     // ball.y = paddle.y - 50,
     // ball.speedX = 5;
     // ball.speedY = 5;
-    ball.visible = true;
+    // ball.visible = true;
     evilPaddle.visible = true;
     ball.x = width / 2;
     ball.y = height / 2;
@@ -287,17 +287,22 @@ window.draw = () => {
   if (blocks.length === 0) {
     ball.visible = false;
     evilPaddle.visible = false;
+    blocks.visible = false;
     endScreen("You Win!");
   }
   // If the player died and there are still bricks to break, they lost.
   if (!alive && blocks.length != 0) { 
     ball.visible = false;
     evilPaddle.visible = false;
+    blocks.visible = false;
     endScreen("GAME OVER 😜");
   }
   // If the player is still alive, draw everything to the screen.
   if(alive) {
     // drawBlocks();
+    evilPaddle.visible = true;
+    ball.visible = true;
+    blocks.visible = true;
     displayScore();
     checkBall();
     // moveEvilPaddle();
